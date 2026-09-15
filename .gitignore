@@ -1,0 +1,23 @@
+# Build output
+build/
+_build/
+
+# Provisioning materials
+key.c
+time.c
+*.key
+
+# Per-machine CMake overrides: SDK and toolchain paths, which differ on every
+# developer's machine and belong nowhere near the repository.
+CMakeUserPresets.json
+
+# The Renesas DA145xx SDK6 goes here (see README). It is proprietary and cannot
+# be redistributed, so it is neither vendored nor a submodule -- and must never
+# be committed. Everything in external/ is ignored except the submodules git
+# already tracks.
+external/DA145xx_SDK
+
+# Editor, tooling and OS noise
+.vscode/
+.cache/
+compile_commands.json
