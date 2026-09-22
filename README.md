@@ -1,6 +1,6 @@
-# Hubble Reference Application — Renesas DA14535
+# Hubble Reference Application — Renesas DA145XX
 
-A Hubble Terrestrial Network beacon for the Renesas DA14535, built with CMake
+A Hubble Terrestrial Network beacon for the Renesas DA145XX, built with CMake
 and Ninja and flashed with SEGGER J-Link. No e² studio required.
 
 
@@ -20,6 +20,7 @@ git submodule update --init --recursive
 # Provision your 16-byte Hubble device key
 python external/hubble-device-sdk/tools/embed_key_time.py -b master.key -o src/hubble
 
+# Build / flash da14535
 cmake --preset da14535
 cmake --build --preset da14535
 cmake --build --preset da14535 --target flash
@@ -34,7 +35,7 @@ cmake --build --preset da14535 --target flash
 
 ## Requirements
 
-1. Renesas DA14535 board
+1. Renesas DA14535 or DA14531 board
 2. Renesas SDK - DA145xx SDK6 6.0.24.1464
 3. Toolchain - LLVM Embedded Toolchain for Arm 17.0.1. [Standalone download](https://github.com/ARM-software/LLVM-embedded-toolchain-for-Arm/releases) or from e² studio download.
 4. Segger J-Link software

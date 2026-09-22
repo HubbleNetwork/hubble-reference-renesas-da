@@ -2,17 +2,37 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 #
-# A Hubble Terrestrial Network beacon for the Renesas DA14535.
+# A Hubble Terrestrial Network beacon for the Renesas DA145XX
 #
 # No CMAKE_BUILD_TYPE: the compile profile comes from cmake/sdk6-sources.cmake,
 # and a build type would make CMake append its own -O and -g on top.
 
 cmake_minimum_required(VERSION 3.21)
 
-project(hubble_beacon_da14535 C)
+project(hubble_beacon C)
 
 set(SRC_DIR    "${CMAKE_CURRENT_SOURCE_DIR}/src")
 set(CONFIG_DIR "${SRC_DIR}/config")
+
+# ---------------------------------------------------------------------------
+# Select Chip
+# ---------------------------------------------------------------------------
+# One preset per part; everything downstream is derived from this and nothing
+# else names a part.
+set(DA145XX_PART CACHE STRING "Target part: DA14535 or DA14531")
+set_property(CACHE DA145XX_PART PROPERTY STRINGS DA14535 DA14531)
+
+if(NOT DA145XX_PART MATCHES "^DA1453[15]$")
+    message(FATAL_ERROR
+        "DA145XX_PART is '${DA145XX_PART}'; expected DA14535 or DA14531.")
+endif()
+
+string(TOLOWER "${DA145XX_PART}" DA145XX_PART_LOWER)
+string(SUBSTRING "${DA145XX_PART}" 4 3 DA145XX_PART_SHORT)
+
+set(PROJECT_NAME "hubble_beacon_${DA145XX_PART_LOWER}")
+
+message(STATUS "Target part: ${DA145XX_PART}")
 
 # ---------------------------------------------------------------------------
 # The Renesas SDK6
@@ -72,7 +92,7 @@ endif()
 
 message(STATUS "DA145xx SDK6: ${DA145XX_SDK_PATH}")
 
-# Holds da14535.lib, which ships prebuilt with the SDK.
+# Holds da145XX.lib, which ships prebuilt with the SDK.
 set(SDK_LIB_DIR "${DA145XX_SDK_PATH}/sdk/platform/system_library/output/Keil_5")
 
 # ---------------------------------------------------------------------------
@@ -117,13 +137,13 @@ set(HUBBLE_OPTIONS "SHELL:-imacros ${CONFIG_DIR}/hubble_config.h")
 # The `_e2s` suffix is required. The plainly-named ldscript_DA14535.lds.S
 # beside it is the GNU-toolchain variant and produces a script LLD rejects.
 set(_ldscript_template
-    "${DA145XX_SDK_PATH}/sdk/common_project_files/ldscripts/ldscript_DA14535_e2s.lds.S")
-set(LDSCRIPT "${CMAKE_CURRENT_BINARY_DIR}/ldscript_DA14535.lds")
+    "${DA145XX_SDK_PATH}/sdk/common_project_files/ldscripts/ldscript_${DA145XX_PART}_e2s.lds.S")
+set(LDSCRIPT "${CMAKE_CURRENT_BINARY_DIR}/ldscript_${DA145XX_PART}.lds")
 
 set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS
     "${_ldscript_template}"
-    "${CONFIG_DIR}/da14535_config_basic.h"
-    "${CONFIG_DIR}/da14535_config_advanced.h")
+    "${CONFIG_DIR}/${DA145XX_PART_LOWER}_config_basic.h"
+    "${CONFIG_DIR}/${DA145XX_PART_LOWER}_config_advanced.h")
 
 # -E -P: preprocess only, no line markers. -c is what e2 studio passes and is
 # inert here; kept so the two command lines stay comparable.
@@ -131,7 +151,7 @@ execute_process(
     COMMAND "${CMAKE_C_COMPILER}"
             -I "${CONFIG_DIR}"
             -I "${DA145XX_SDK_PATH}/sdk/common_project_files"
-            -D__DA14535__
+            -D__${DA145XX_PART}__
             -E -P -c "${_ldscript_template}"
     OUTPUT_VARIABLE _lds
     ERROR_VARIABLE  _lds_err
@@ -177,7 +197,7 @@ set(ALL_INCLUDES ${_sdk_includes} "${CONFIG_DIR}" "${SRC_DIR}" ${HUBBLE_INCLUDES
 # carry the CFG_* switches that decide which declarations exist at all. By
 # absolute path, so the SDK include directories above cannot shadow them.
 set(FORCE_INCLUDES "")
-foreach(_header da14535_config_basic.h da14535_config_advanced.h user_config.h)
+foreach(_header ${DA145XX_PART_LOWER}_config_basic.h ${DA145XX_PART_LOWER}_config_advanced.h user_config.h)
     list(APPEND FORCE_INCLUDES "SHELL:-include ${CONFIG_DIR}/${_header}")
 endforeach()
 
@@ -242,17 +262,17 @@ target_link_options(${PROJECT_NAME} PRIVATE
     -lcrt0
     "-T${LDSCRIPT}"
     # Holds the symbol files the script pulls in with `INCLUDE
-    # da14535_symbols.lds`; a -L despite containing no libraries.
+    # da145xx_symbols.lds`; a -L despite containing no libraries.
     "-L${DA145XX_SDK_PATH}/sdk/common_project_files/misc"
     "-L${SDK_LIB_DIR}"
-    # da14535.lib is named twice on purpose: it and the SDK objects each
+    # da145xx.lib is named twice on purpose: it and the SDK objects each
     # resolve symbols in the other. SHELL: on the second stops CMake
     # de-duplicating it away.
     -Wl,--start-group
-    "-l:da14535.lib"
+    "-l:${DA145XX_PART_LOWER}.lib"
     -Wl,--end-group
     -Wl,-eReset_Handler
-    "SHELL:-l:da14535.lib"
+    "SHELL:-l:${DA145XX_PART_LOWER}.lib"
     -Wl,--gc-sections
     -Wl,--cref
     # ICF would fold identical functions together, breaking the linker script's
@@ -275,7 +295,7 @@ add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
 # Loads the image into SysRAM over SWD and starts it. Not written to flash; it
 # does not survive a power cycle.
 #
-#     cmake --build --preset da14535 --target flash
+#     cmake --build --preset ${DA145XX_PART_LOWER} --target flash
 # SEGGER installs into a version-stamped directory; prefer the newest. An old
 # DLL against a recent part connects and reports the core as unknown.
 file(GLOB _jlink_dirs
@@ -317,7 +337,7 @@ else()
     file(GENERATE OUTPUT "${_flash_commands}" CONTENT
 "si SWD
 speed 2000
-device DA14535
+device ${DA145XX_PART}
 connect
 loadfile $<TARGET_FILE:${PROJECT_NAME}>
 r
