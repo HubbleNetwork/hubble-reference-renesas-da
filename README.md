@@ -23,15 +23,10 @@ python external/hubble-device-sdk/tools/embed_key_time.py -b master.key -o src/h
 # Build / flash da14535
 cmake --preset da14535
 cmake --build --preset da14535
-cmake --build --preset da14535 --target flash
+# This 'flash_sysram' target pushes firmware into SysRAM only.
+# If using the Pro Dev Kit, you can use 'flash' to update the motherboard's SPI NOR flash.
+cmake --build --preset da14535 --target flash_sysram
 ```
-
-## Limitations
-
-1. This is a RAM image - the flash tool pushes the code directly into RAM. It does not survive a power cycle.
-2. The hardware only supports 128-bit encryption keys.
-3. You must manually add the Renesas SDK to comply with licensing.
-
 
 ## Requirements
 
@@ -39,9 +34,16 @@ cmake --build --preset da14535 --target flash
 2. Renesas SDK - DA145xx SDK6 6.0.24.1464
 3. Toolchain - LLVM Embedded Toolchain for Arm 17.0.1. [Standalone download](https://github.com/ARM-software/LLVM-embedded-toolchain-for-Arm/releases) or from e² studio download.
 4. Segger J-Link software
-5. CMake (version 3.21+), Ninja
-6. Python3
-7. A 128-bit Hubble key. Default usage: Unix time key.
+5. [SmartSnippets Toolbox](https://www.renesas.com/en/software-tool/smartbond-development-tools?srsltid=AU7gw4XWXOrhoe4fSAgtBqb_ic3mYhUN0GosSdnRDH0oiT0UQQkhjjwd#overview), if loading firmware to SPI NOR flash.
+6. CMake (version 3.21+), Ninja
+7. Python3
+8. A 128-bit Hubble key. Default usage: Unix time key.
+
+## Limitations
+
+1. The hardware only supports 128-bit encryption keys.
+2. You must manually add the Renesas SDK to comply with licensing.
+3. There is no SmartSnippets Toolbox download for macOS.
 
 
 ## The Renesas SDK
@@ -89,13 +91,33 @@ script, and the beacon has no other way to learn the updated time.
 
 ## Build and flash
 
+This pushes the firmware into SysRAM:
+
 ```sh
 cmake --preset da14535
 cmake --build --preset da14535
-cmake --build --preset da14535 --target flash
+cmake --build --preset da14535 --target flash_sysram
 ```
 
-The build prints its section sizes when it finishes.
+There are other available flash / erase targets:
+
+| Target | What it does | Requirements |
+|---|---|---|
+| `erase`, `erase_spi_nor` | Erases the SPI flash | Pro Dev Kit |
+| `flash`, `flash_spi_nor` | Erases the SPI flash, writes the image to SPI flash, restarts the board so it boots from flash | Pro Dev Kit |
+| `flash_sysram` | Loads the image straight into SysRAM over SWD and starts it |  |
+
+Use `flash_sysram` on a board with no SPI flash, or with its flash on pins
+other than the family default below. Keep in mind that if the SPI flash still
+holds an image, that image is what the board boots at its next power cycle.
+
+> [!WARNING]
+> If using the Pro Dev Kit motherboard, you may need to `erase` before switching
+> to a daughterboard of a different chip type. i.e. if you `flash` a DA14531,
+> then switch to a DA14535, run `erase` with the DA14531 still connected before
+> changing the daughterboard. Otherwise, the daughterboard may not attach
+> correctly because it is trying to run code for a different board.
+
 
 To pin machine-specific paths without touching the repository, write a
 `CMakeUserPresets.json` beside `CMakePresets.json` — it is gitignored:
