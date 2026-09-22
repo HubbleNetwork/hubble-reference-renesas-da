@@ -14,19 +14,25 @@
 # home of a header the build actually opens (`ninja -t deps`). Re-run both
 # checks after adding anything.
 #
-# After changing anything here, check that the generated ldscript_DA14535.lds
-# is unchanged and that the map still places heap_env_area, heap_msg_area,
+# After changing anything here, check that the generated ldscript_<part>.lds is
+# unchanged and that the map still places heap_env_area, heap_msg_area,
 # heap_db_area and chacha20_state in the retention regions.
+#
+# DA145XX_PART and DA145XX_PART_SHORT are set by CMakeLists.txt.
 
 set(DA145XX_SDK6_VERSION "6.0.24.1464")
 
-# Both are required: the DA14535 is a DA14531 derivative, the SDK's drivers
-# are named for the family (rf_531.c, adc_531.c), and the SDK's own DA14535
-# build configuration defines the pair exactly like this.
-set(DA145XX_SDK6_DEFINES
-    __DA14531__
-    __DA14535__
-)
+# DA14535 is depends on DA14531 files. Include
+if(DA145XX_PART STREQUAL "DA14535")
+    set(DA145XX_SDK6_DEFINES
+        __DA14531__
+        __DA14535__
+    )
+elseif(DA145XX_PART STREQUAL "DA14531")
+    set(DA145XX_SDK6_DEFINES
+        __DA14531__
+    )
+endif()
 
 # The profile almost every file is built with. CMAKE_BUILD_TYPE must be left
 # empty by the toolchain file, or CMake appends its own -O/-g/-DNDEBUG on top of
@@ -136,8 +142,8 @@ set(DA145XX_SDK6_SRCS
     sdk/app_modules/src/app_entry/app_entry_point.c
     sdk/ble_stack/profiles/prf.c
     sdk/ble_stack/rwble/rwble.c
-    sdk/platform/arch/boot/startup_DA14535.c
-    sdk/platform/arch/boot/system_DA14535.c
+    sdk/platform/arch/boot/startup_${DA145XX_PART}.c
+    sdk/platform/arch/boot/system_${DA145XX_PART}.c
     sdk/platform/arch/main/arch_main.c
     sdk/platform/arch/main/arch_rom.c
     sdk/platform/arch/main/arch_sleep.c
@@ -158,7 +164,7 @@ set(DA145XX_SDK6_SRCS
     sdk/platform/driver/syscntl/syscntl.c
     sdk/platform/driver/trng/trng.c
     sdk/platform/driver/wkupct_quadec/wkupct_quadec.c
-    sdk/platform/system_library/src/DA14535/system_library_535.c
+    sdk/platform/system_library/src/${DA145XX_PART}/system_library_${DA145XX_PART_SHORT}.c
     sdk/platform/utilities/otp_cs/otp_cs.c
     sdk/platform/utilities/otp_hdr/otp_hdr.c
 )
