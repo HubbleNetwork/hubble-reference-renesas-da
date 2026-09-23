@@ -6,45 +6,58 @@
 
 #include <stdint.h>
 
-#include "compiler.h"
 #include "rtc.h"
 
 #include <hubble/port/sys.h>
 
+#define HSEC_TO_MSEC 10U
+#define SEC_TO_MSEC 1000U
+#define MIN_TO_MSEC (60U * SEC_TO_MSEC)
+#define HOUR_TO_MSEC (60U * MIN_TO_MSEC)
+#define DAY_TO_MSEC (24U * HOUR_TO_MSEC)
+
 /*
- * Days come from watching the RTC's hour field wrap from 23 to 0, so this has
- * to be called often enough to land in hour 23 before midnight -- once an hour
- * is sufficient. Miss it and uptime loses a day for good. The beacon refreshes
- * every HUBBLE_ADV_REFRESH_PERIOD_S.
+ * Days elapsed since 2000-01-01, the date rtc_start_clock() starts the
+ * calendar at. Uptime cannot reach 2100 inside a century, so every fourth
+ * year is a leap year with no exceptions.
  */
-uint64_t hubble_uptime_get(void)
+static uint32_t _days_since_2000(const rtc_calendar_t *clndr)
 {
-	/*
-	 * Placed in retention memory deliberately. With the current config it
-	 * is belt and braces -- da14535_config_advanced.h defines
-	 * CFG_RETAIN_RAM_1_BLOCK, which on this part makes the SDK's
-	 * DO_NOT_RETAIN_ALL_RAM_BLOCKS 0, so no RAM is powered down in
-	 * extended sleep and a plain static would survive too. It stops being
-	 * belt and braces the moment someone retains less, which is the norm
-	 * on the DA14531: the day count would reset while the RTC kept
-	 * counting, and uptime would go backwards.
-	 */
-	static uint32_t days __SECTION_ZERO("retention_mem_area0");
-	static uint8_t last_hour __SECTION_ZERO("retention_mem_area0");
-	rtc_time_t time;
+	static const uint16_t days_before_month[12] = {
+		0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334,
+	};
+	uint32_t years = clndr->year - 2000U;
+	uint32_t days = (years * 365U) + ((years + 3U) / 4U) +
+			days_before_month[clndr->month - 1U] + clndr->mday - 1U;
 
-	rtc_get_time_clndr(&time, NULL);
-
-	if (time.hour < last_hour) {
+	if (((years % 4U) == 0U) && (clndr->month > 2U)) {
 		days++;
 	}
 
-	last_hour = time.hour;
+	return days;
+}
 
-	return ((uint64_t)days * 86400000ULL) +
-	       ((uint64_t)time.hour * 3600000ULL) +
-	       ((uint64_t)time.minute * 60000ULL) +
-	       ((uint64_t)time.sec * 1000ULL) + ((uint64_t)time.hsec * 10ULL);
+uint64_t hubble_uptime_get(void)
+{
+	rtc_calendar_t before;
+	rtc_calendar_t after;
+	rtc_time_t time;
+
+	do {
+		/*
+		 * Reading time and calendar at once stops the RTC. To better keep it in sync, read
+		 * one at a time, and confirm we didn't just read on a date boundary.
+		 */
+		rtc_get_time_clndr(NULL, &before);
+		rtc_get_time_clndr(&time, NULL);
+		rtc_get_time_clndr(NULL, &after);
+	} while ((before.mday != after.mday) || (before.month != after.month) ||
+		 (before.year != after.year));
+
+	return ((uint64_t)_days_since_2000(&after) * DAY_TO_MSEC) +
+	       ((uint64_t)time.hour * HOUR_TO_MSEC) +
+	       ((uint64_t)time.minute * MIN_TO_MSEC) +
+	       ((uint64_t)time.sec * SEC_TO_MSEC) + ((uint64_t)time.hsec * HSEC_TO_MSEC);
 }
 
 /*

@@ -107,7 +107,7 @@ _Static_assert(HUBBLE_ADV_REFRESH_TICKS > 0U &&
 /*
  * Retention memory. Currently belt and braces -- CFG_RETAIN_RAM_1_BLOCK keeps
  * every RAM block alive in extended sleep -- but it is what these would need
- * if a future config retained less. See hubble/hubble_port.c.
+ * if a future config retained less.
  */
 static timer_hnd _adv_refresh_timer __SECTION_ZERO("retention_mem_area0");
 static uint8_t _adv_data[ADV_DATA_LEN] __SECTION_ZERO("retention_mem_area0");

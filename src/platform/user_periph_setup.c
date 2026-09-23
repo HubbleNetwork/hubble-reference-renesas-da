@@ -51,6 +51,17 @@ static void rtc_start_clock(void)
 		.sec = 0U,
 		.hsec = 0U,
 	};
+
+	/*
+	 * The RTC begins at this date by default, but set it explicitly to
+	 * know we are correct in calling this our initial day.
+	 */
+	rtc_calendar_t clndr = {
+		.year = 2000U,
+		.month = 1U,
+		.mday = 1U,
+		.wday = 7U,
+	};
 	uint16_t lp_clk_freq = arch_clk_is_RCX20()
 				       ? (uint16_t)rcx_time_data.rcx_freq
 				       : 32768U;
@@ -73,7 +84,7 @@ static void rtc_start_clock(void)
 	if ((GetWord32(RTC_CONTROL_REG) & RTC_TIME_DISABLE) != 0U) {
 		rtc_reset();
 		rtc_init(&cfg);
-		rtc_set_time_clndr(&time, NULL);
+		rtc_set_time_clndr(&time, &clndr);
 		rtc_start();
 	}
 }
