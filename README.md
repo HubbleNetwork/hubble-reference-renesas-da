@@ -11,7 +11,7 @@ git clone https://github.com/HubbleNetwork/hubble-reference-renesas-da
 
 cd hubble-reference-renesas-da
 
-`git submodule update --init --recursive`
+git submodule update --init --recursive
 
 # Place the Renesas SDK -- see below. Nothing else to configure.
 #   external/DA145xx_SDK/6.0.24.1464/
