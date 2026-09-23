@@ -12,9 +12,7 @@ time.c
 CMakeUserPresets.json
 
 # The Renesas DA145xx SDK6 goes here (see README). It is proprietary and cannot
-# be redistributed, so it is neither vendored nor a submodule -- and must never
-# be committed. Everything in external/ is ignored except the submodules git
-# already tracks.
+# be redistributed, so it must not be committed.
 external/DA145xx_SDK
 
 # Editor, tooling and OS noise

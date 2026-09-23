@@ -4,6 +4,17 @@ A Hubble Terrestrial Network beacon for the Renesas DA145XX, built with CMake
 and Ninja and flashed with SEGGER J-Link. No e² studio required.
 
 
+## Requirements
+
+1. Renesas DA14535 or DA14531 board
+2. Renesas SDK - DA145xx SDK6 6.0.24.1464
+3. Toolchain - LLVM Embedded Toolchain for Arm 17.0.1. [Standalone download](https://github.com/ARM-software/LLVM-embedded-toolchain-for-Arm/releases) or from e² studio download. Unpack it under `external/`, or point at it with `-DLLVM_ARM_TOOLCHAIN_PATH=<dir>`.
+4. Segger J-Link software
+5. [SmartSnippets Toolbox](https://www.renesas.com/en/software-tool/smartbond-development-tools?srsltid=AU7gw4XWXOrhoe4fSAgtBqb_ic3mYhUN0GosSdnRDH0oiT0UQQkhjjwd#overview), if loading firmware to SPI NOR flash.
+6. CMake (version 3.21+), Ninja
+7. Python3
+8. A 128-bit Hubble key. Default usage: Unix time key.
+
 ## Quick start
 
 ```sh
@@ -27,17 +38,6 @@ cmake --build --preset da14535
 # If using the Pro Dev Kit, you can use 'flash' to update the motherboard's SPI NOR flash.
 cmake --build --preset da14535 --target flash_sysram
 ```
-
-## Requirements
-
-1. Renesas DA14535 or DA14531 board
-2. Renesas SDK - DA145xx SDK6 6.0.24.1464
-3. Toolchain - LLVM Embedded Toolchain for Arm 17.0.1. [Standalone download](https://github.com/ARM-software/LLVM-embedded-toolchain-for-Arm/releases) or from e² studio download.
-4. Segger J-Link software
-5. [SmartSnippets Toolbox](https://www.renesas.com/en/software-tool/smartbond-development-tools?srsltid=AU7gw4XWXOrhoe4fSAgtBqb_ic3mYhUN0GosSdnRDH0oiT0UQQkhjjwd#overview), if loading firmware to SPI NOR flash.
-6. CMake (version 3.21+), Ninja
-7. Python3
-8. A 128-bit Hubble key. Default usage: Unix time key.
 
 ## Limitations
 
@@ -164,4 +164,3 @@ if functioning properly.
 ## License
 
 This application is Apache-2.0; see [LICENSE](LICENSE).
-
