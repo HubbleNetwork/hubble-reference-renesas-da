@@ -122,6 +122,31 @@ set(HUBBLE_INCLUDES "${HUBBLE_SDK_ROOT}/include" "${HUBBLE_SDK_ROOT}/src")
 set(HUBBLE_OPTIONS "SHELL:-imacros ${CONFIG_DIR}/hubble_config.h")
 
 # ---------------------------------------------------------------------------
+# MbedTLS
+# ---------------------------------------------------------------------------
+set(MBEDTLS_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/external/mbedtls")
+
+if(NOT EXISTS "${MBEDTLS_ROOT}/library/aes.c")
+    message(FATAL_ERROR
+        "The Mbed TLS submodule at external/mbedtls is empty.\n"
+        "Run:  git submodule update --init --recursive")
+endif()
+
+# Only what hubble_mbedtls_config.h enables; LTO drops whatever of these goes unused.
+set(MBEDTLS_SOURCES
+    "${MBEDTLS_ROOT}/library/aes.c"
+    "${MBEDTLS_ROOT}/library/cipher.c"
+    "${MBEDTLS_ROOT}/library/cipher_wrap.c"
+    "${MBEDTLS_ROOT}/library/cmac.c"
+    "${MBEDTLS_ROOT}/library/constant_time.c"
+    "${MBEDTLS_ROOT}/library/platform.c"
+    "${MBEDTLS_ROOT}/library/platform_util.c"
+)
+
+# Replaces the library's default config.
+set(MBEDTLS_DEFINES "MBEDTLS_CONFIG_FILE=\"hubble_mbedtls_config.h\"")
+
+# ---------------------------------------------------------------------------
 # Linker script
 # ---------------------------------------------------------------------------
 # SDK6 ships a *source* for one. Preprocessing it with this project's config
@@ -209,19 +234,29 @@ list(TRANSFORM SDK_SOURCES PREPEND "${DA145XX_SDK_PATH}/")
 set(SDK_SOURCES_NOLTO ${DA145XX_SDK6_SRCS_NOLTO})
 list(TRANSFORM SDK_SOURCES_NOLTO PREPEND "${DA145XX_SDK_PATH}/")
 
-# Three object libraries. app and sdk differ only in that app carries the
+# Four object libraries. app and sdk differ only in that app carries the
 # Hubble configuration, which has no business in a Renesas translation unit;
-# sdk_nolto is the two sources that opt out of LTO. Nearly the whole image is
-# a single LTO unit regardless, so the linker sees three real inputs -- that
-# unit, chacha20.o and jump_table.o.
+# mbedtls is third-party code that needs neither the SDK's headers nor its
+# force-includes; sdk_nolto is the two sources that opt out of LTO. Nearly the
+# whole image is a single LTO unit regardless, so the linker sees three real
+# inputs -- that unit, chacha20.o and jump_table.o.
 add_library(app OBJECT
     "${SRC_DIR}/platform/user_periph_setup.c"
     "${SRC_DIR}/user_hubble_beacon.c"
     "${SRC_DIR}/hubble/hubble_port.c"
-    "${SRC_DIR}/hubble/hubble_crypto_renesas.c"
+    "${SRC_DIR}/hubble/hubble_crypto_port.c"
+    "${HUBBLE_SDK_ROOT}/src/crypto/mbedtls.c"
     ${HUBBLE_SOURCES}
 )
 target_compile_options(app PRIVATE ${HUBBLE_OPTIONS})
+target_include_directories(app PRIVATE "${MBEDTLS_ROOT}/include")
+target_compile_definitions(app PRIVATE ${MBEDTLS_DEFINES})
+
+add_library(mbedtls OBJECT ${MBEDTLS_SOURCES})
+target_compile_options(mbedtls PRIVATE ${DA145XX_SDK6_C_FLAGS})
+target_include_directories(mbedtls PRIVATE
+    "${MBEDTLS_ROOT}/include" "${MBEDTLS_ROOT}/library" "${CONFIG_DIR}")
+target_compile_definitions(mbedtls PRIVATE ${MBEDTLS_DEFINES})
 
 add_library(sdk       OBJECT ${SDK_SOURCES})
 add_library(sdk_nolto OBJECT ${SDK_SOURCES_NOLTO})
@@ -246,6 +281,7 @@ endforeach()
 # order.
 add_executable(${PROJECT_NAME}
     $<TARGET_OBJECTS:app>
+    $<TARGET_OBJECTS:mbedtls>
     $<TARGET_OBJECTS:sdk>
     $<TARGET_OBJECTS:sdk_nolto>
 )

@@ -41,9 +41,8 @@ cmake --build --preset da14535 --target flash_sysram
 
 ## Limitations
 
-1. The hardware only supports 128-bit encryption keys.
-2. You must manually add the Renesas SDK to comply with licensing.
-3. There is no SmartSnippets Toolbox download for macOS.
+1. You must manually add the Renesas SDK to comply with licensing.
+2. There is no SmartSnippets Toolbox download for macOS.
 
 
 ## The Renesas SDK
