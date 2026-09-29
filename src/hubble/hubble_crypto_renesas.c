@@ -47,11 +47,6 @@ int hubble_crypto_aes_ctr(const uint8_t key[CONFIG_HUBBLE_KEY_SIZE],
 		return 0;
 	}
 
-	if ((key == NULL) || (nonce_counter == NULL) || (data == NULL) ||
-	    (output == NULL)) {
-		return -1;
-	}
-
 	/*
 	 * CTR is not a cipher in its own right -- it turns a block cipher into
 	 * a stream cipher. Per 16-byte block: encrypt the counter to get key
@@ -85,13 +80,9 @@ int hubble_crypto_aes_ctr(const uint8_t key[CONFIG_HUBBLE_KEY_SIZE],
 
 		/*
 		 * XOR the key stream into the data. Encrypting and decrypting
-		 * are the same operation; a short final chunk simply uses the
-		 * first `chunk` bytes of key stream and discards the rest.
+		 * are the same operation;
 		 */
-		for (size_t i = 0U; i < chunk; i++) {
-			output[off + i] =
-				(uint8_t)(data[off + i] ^ stream_block[i]);
-		}
+		aes_array_xor(&data[off], stream_block, chunk, &output[off]);
 
 		/*
 		 * Step the counter for the next block: treat the whole 16-byte
@@ -118,15 +109,6 @@ int hubble_crypto_cmac(const uint8_t key[CONFIG_HUBBLE_KEY_SIZE],
 		       uint8_t output[HUBBLE_AES_BLOCK_SIZE])
 {
 	uint8_t status;
-
-	if ((key == NULL) || (output == NULL)) {
-		return -1;
-	}
-
-	/* A zero-length message is valid and has no buffer. */
-	if ((len != 0U) && (data == NULL)) {
-		return -1;
-	}
 
 	/* aes_cmac_generate() takes the length as uint16_t. */
 	if (len > UINT16_MAX) {
