@@ -1,0 +1,44 @@
+{
+  "version": 3,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 21,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "da14535",
+      "displayName": "DA14535 (RAM image)",
+      "description": "Builds a SysRAM image for the DA14535. The Renesas SDK and the LLVM toolchain are both found under external/; point at installs elsewhere with -DDA145XX_SDK_PATH= and -DLLVM_ARM_TOOLCHAIN_PATH=, or put them in a CMakeUserPresets.json.",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/da14535",
+      "toolchainFile": "${sourceDir}/cmake/toolchain-llvm-arm.cmake",
+      "cacheVariables": {
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+        "DA145XX_PART": "DA14535"
+      }
+    },
+    {
+      "name": "da14531",
+      "displayName": "DA14531 (RAM image)",
+      "description": "Builds a SysRAM image for the DA14531. The Renesas SDK and the LLVM toolchain are both found under external/; point at installs elsewhere with -DDA145XX_SDK_PATH= and -DLLVM_ARM_TOOLCHAIN_PATH=, or put them in a CMakeUserPresets.json.",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/da14531",
+      "toolchainFile": "${sourceDir}/cmake/toolchain-llvm-arm.cmake",
+      "cacheVariables": {
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+        "DA145XX_PART": "DA14531"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "da14535",
+      "configurePreset": "da14535"
+    },
+    {
+      "name": "da14531",
+      "configurePreset": "da14531"
+    }
+  ]
+}
