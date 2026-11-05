@@ -150,9 +150,6 @@ set(DA145XX_SDK6_SRCS
     sdk/platform/arch/main/arch_system.c
     sdk/platform/arch/main/hardfault_handler.c
     sdk/platform/arch/main/nmi_handler.c
-    sdk/platform/core_modules/crypto/aes_api.c
-    sdk/platform/core_modules/crypto/aes_cbc.c
-    sdk/platform/core_modules/crypto/aes_cmac.c
     sdk/platform/core_modules/nvds/src/nvds.c
     sdk/platform/core_modules/rf/src/ble_arp.c
     sdk/platform/core_modules/rf/src/rf_531.c
